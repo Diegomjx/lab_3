@@ -91,6 +91,9 @@ if (lista->head.next == NULL)
 	}
 }
 
+
+
+
 void crear_proceso(char * str){
 	char * copy = (char*)malloc(50*sizeof(char));
 
