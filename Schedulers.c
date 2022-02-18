@@ -140,11 +140,6 @@ void crear_proceso(char * str){
 	
 }
 
-void liberar_procesos(){
-	for(int i=0; i<Nprocess; ++i)
-		free((*(processes+i) )->name );
-		
-}
 void cargar_procesos(){
 	inicialisar_lista(&cola);
 
@@ -225,24 +220,24 @@ void fcfs_pepare(struct list *l){
 	int at = 0;
 	struct node * original = &l->head;
 	struct node * n;
-	uint kernel_time = 0;
+	uint KT = 0;
 
-	int numberProcesses = length(l);
+	int np = length(l);
 
-	int dispatched = 0;
+	int dis = 0;
 
-	for (int at = 0; dispatched != numberProcesses; ++at)
+	for (int at = 0; dis != np; ++at)
 	{
 		n = original;
 		while((n = n->next) != NULL){
 			if (n->at == at)
 			{
-				kernel_time = kernel_time + n->bt;
-				n->et = kernel_time;
-				n->wt = kernel_time - n->at - n->bt;
+				KT = KT + n->bt;
+				n->et = KT;
+				n->wt = KT - n->at - n->bt;
 				n->rt = n->wt;
 				n->tt = n->et - at;
-				++dispatched;
+				++dis;
 			}
 			else
 			{
@@ -335,18 +330,18 @@ void agregarPrioridad(struct list *pq, struct node *n){
 }
 
 void creandoPs(struct list * queue, struct node ** array, int length){
-	uint kernel_time = 0;
-	uint executing = 0;
-	struct node * inExecution;
-	uint estimated_finish_time = 0;
+	uint KT = 0;
+	uint EX = 0;
+	struct node * inEX;
+	uint estFT = 0;
 
-	int dispatched = 0;
+	int dis = 0;
 
-	for (; dispatched != length; ++kernel_time)
+	for (; dis != length; ++KT)
 	{
 		for (int i = 0; i < length; ++i)
 		{
-			if ((*(array + i))->at == kernel_time)
+			if ((*(array + i))->at == KT)
 			{
 				
 				agregarPrioridad(queue, *(array + i));
@@ -358,25 +353,25 @@ void creandoPs(struct list * queue, struct node ** array, int length){
 		}
 		
 
-		if (executing && estimated_finish_time == kernel_time)
+		if (EX && estFT == KT)
 		{
-			executing = 0;
-			dispatched++;
-			inExecution = NULL;
+			EX = 0;
+			dis++;
+			inEX = NULL;
 		}
 
-		if (executing == 0)
+		if (EX == 0)
 		{
 			if (queue->head.next != NULL)
 			{
-				inExecution = pop(queue);
-				executing = 1;
-				estimated_finish_time = kernel_time + inExecution->bt;
+				inEX = pop(queue);
+				EX = 1;
+				estFT = KT + inEX->bt;
 				
-				inExecution->et = estimated_finish_time;
-				inExecution->wt = estimated_finish_time - inExecution->at - inExecution->bt;
-				inExecution->rt = inExecution->wt;
-				inExecution->tt = inExecution->et - inExecution->at;
+				inEX->et = estFT;
+				inEX->wt = estFT - inEX->at - inEX->bt;
+				inEX->rt = inEX->wt;
+				inEX->tt = inEX->et - inEX->at;
 			}
 		}			
 	}	
@@ -419,20 +414,17 @@ void PS(void *vargp) {
 } 
 
 void crearRR(struct list * queue, struct node ** array, int length, int quantum){
-	uint kernel_time = 0;
-	uint executing = 0;
-	struct node * inExecution;
-
+	uint KT = 0;
+	uint EX = 0;
+	struct node * inEX;
 	uint qm_counter = 0;
+	int dis = 0;
 
-	int dispatched = 0;
-
-
-	for (; dispatched != length; ++kernel_time)
+	for (; dis != length; ++KT)
 	{
 		for (int i = 0; i < length; ++i)
 		{
-			if ((*(array + i))->at == kernel_time)
+			if ((*(array + i))->at == KT)
 			{
 				add_back(queue, *(array + i));
 			}
@@ -441,46 +433,43 @@ void crearRR(struct list * queue, struct node ** array, int length, int quantum)
 				continue;
 			}
 		}
-
-		
-
-		if (executing)
-		{
-			inExecution->workDone++;
-			qm_counter++;
-			if (inExecution->workDone == inExecution->bt)
+		if (EX)
 			{
-				executing = 0;
-				dispatched++;
+			inEX->workDone++;
+			qm_counter++;
+			if (inEX->workDone == inEX->bt)
+			{
+				EX = 0;
+				dis++;
 				qm_counter = 0;
-				inExecution->et = kernel_time;
-				inExecution->wt = kernel_time - inExecution->at - inExecution->bt;
-				inExecution->tt = inExecution->et - inExecution->at;
-				inExecution = NULL;
+				inEX->et = KT;
+				inEX->wt = KT - inEX->at - inEX->bt;
+				inEX->tt = inEX->et - inEX->at;
+				inEX = NULL;
 			}
 
 			if (qm_counter == quantum)
 			{
 				qm_counter = 0;
-				executing = 0;
-				if (inExecution != NULL)
+				EX = 0;
+				if (inEX != NULL)
 				{
-					add_back(queue, inExecution);
-					inExecution = NULL;
+					add_back(queue, inEX);
+					inEX = NULL;
 				}
 			}
 		}
 
-		if (executing == 0)
-		{
+		if (EX == 0)
+			{
 			if (queue->head.next != NULL)
 			{
-				inExecution = pop(queue);
-				if (inExecution->workDone == 0)
+				inEX = pop(queue);
+				if (inEX->workDone == 0)
 				
-					inExecution->rt = kernel_time - inExecution->at;
+					inEX->rt = KT - inEX->at;
 				
-				executing = 1;
+				EX = 1;
 			}
 		}			
 	}
@@ -561,7 +550,6 @@ int main ( int argc , char * argv []) {
 		}
 	}
 	// liberamos todos los MALLOCS
-//	liberar_procesos();
 	free(processes);
 	return 0;
 }
