@@ -195,14 +195,13 @@ void rellenar_Arreglo_Proceso(){
 	for (int i = 0; i < Nprocess; i++)
 		*(processes+i)=pop(&cola);
 
-	struct node * n ;
+/*	struct node * n ;
 			for (int i = 0; i < Nprocess; ++i)
 		{
 			n = *(processes + i);
 			printf("|%s\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
 				n->name, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
-			}
-		//	printf("%s", separator);
+			}*/
 		
 }
 
@@ -299,28 +298,28 @@ void insert(struct list * pq, struct node * newnode, struct node * reference){
 	reference->prev = newnode;
 
 }
-void priority_add(struct list *pq, struct node *n){
+void agregarPrioridad(struct list *pq, struct node *n){
 	
-	struct node * dog = &pq->head;
+	struct node * var1 = &pq->head;
 	if (pq->head.next == NULL)
 	{
 		add_back(pq, n);
 	}
 	else
 	{	
-		while((dog = dog->next) != NULL){
-			if (dog->v > n->v)
+		while((var1 = var1->next) != NULL){
+			if (var1->v > n->v)
 			{
-			//	reschedule(pq, n, dog);
-			if (dog)
-				insert(pq, n, dog);
+
+			if (var1)
+				insert(pq, n, var1);
 			else
 				add_back(pq, n);
 				break;
 			}
 			else
 			{
-				if (dog->next == NULL)
+				if (var1->next == NULL)
 				{
 					add_back(pq, n);
 							
@@ -335,29 +334,22 @@ void priority_add(struct list *pq, struct node *n){
 	}	
 }
 
-void ps_schedule(struct list * queue, struct node ** array, int length){
-	char str[5];
+void creandoPs(struct list * queue, struct node ** array, int length){
 	uint kernel_time = 0;
 	uint executing = 0;
-	uint time_travel = 0;
 	struct node * inExecution;
 	uint estimated_finish_time = 0;
 
 	int dispatched = 0;
 
-	char * str1 = "No process in execution";
-
-
-
 	for (; dispatched != length; ++kernel_time)
 	{
-		//printf("At kernel time: %d\n", kernel_time);
 		for (int i = 0; i < length; ++i)
 		{
 			if ((*(array + i))->at == kernel_time)
 			{
 				
-				priority_add(queue, *(array + i));
+				agregarPrioridad(queue, *(array + i));
 			}
 			else
 			{
@@ -408,8 +400,7 @@ void PS(void *vargp) {
 	//output(0);
 	inicialisar_lista(&cola);
 	//***********************
-	fila_fsfc(&cola, processes, Nprocess);
-	fcfs_pepare(&cola);
+	creandoPs(&cola, processes, Nprocess);
 	//***********************
 	printf(" --> PS\n");
 	printf("|-------|-------|-------|-------|-------|-------|-------|-------| \n");
@@ -427,9 +418,92 @@ void PS(void *vargp) {
 
 } 
 
+void crearRR(struct list * queue, struct node ** array, int length, int quantum){
+	char str[5];
+	uint kernel_time = 0;
+	uint executing = 0;
+	struct node * inExecution;
+
+	uint qm_counter = 0;
+
+	int dispatched = 0;
+
+	char * str1 = "No process in execution";
+
+	for (; dispatched != length; ++kernel_time)
+	{
+		//printf("At kernel time: %d\n", kernel_time);
+		for (int i = 0; i < length; ++i)
+		{
+			if ((*(array + i))->at == kernel_time)
+			{
+				add_back(queue, *(array + i));
+			}
+			else
+			{
+				continue;
+			}
+		}
+		//printf("Processes in Queue: \n");
+		//print_list(queue);
+		
+
+		if (executing)
+		{
+			inExecution->workDone++;
+			qm_counter++;
+			if (inExecution->workDone == inExecution->bt)
+			{
+				//printf("Termino un proceso\n");
+				executing = 0;
+				dispatched++;
+				
+				qm_counter = 0;
+
+				/* Setting Process Properties */
+				inExecution->et = kernel_time;
+				inExecution->wt = kernel_time - inExecution->at - inExecution->bt;
+				//inExecution->rt = inExecution->wt;
+				inExecution->tt = inExecution->et - inExecution->at;
+				inExecution = NULL;
+			}
+
+			if (qm_counter == quantum)
+			{
+				//printf("/*Context Switch*/\n");
+				qm_counter = 0;
+				executing = 0;
+				if (inExecution != NULL)
+				{
+					add_back(queue, inExecution);
+					inExecution = NULL;
+				}
+				/* Switch context */
+
+			}
+		}
+
+		if (executing == 0)
+		{
+			if (queue->head.next != NULL)
+			{
+				inExecution = pop(queue);
+				if (inExecution->workDone == 0)
+				{
+					inExecution->rt = kernel_time - inExecution->at;
+				}
+				executing = 1;
+
+			}
+		}			
+
+
+	}
+}
+
 void RR(void *vargp) {
 		/*
-	QM=2
+	QM=?
 	AT=AT
 	BT=BT
 
@@ -440,7 +514,22 @@ void RR(void *vargp) {
 	TT = ET-AT = BT+WT
 	*/
 	printf(" --> RR\n");
-	output(0);
+	printf("Quantum:");
+	int qua= quantum();
+	reiniciar_procesos();
+	crearRR(&cola, processes, Nprocess, qua);
+	printf("|-------|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+	printf("|PXX\t|QU\t|QM\t|AT\t|BT\t|ET\t|WT\t|RT\t|TT\t|\n" );
+	printf("|-------|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+		struct node * n ;
+			for (int i = 0; i < Nprocess; ++i)
+		{
+			n = *(processes + i);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
+				i, n->qu, n->qm, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
+			}
+			printf("|-------|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+
 } 
 
 void MLFQS(void *vargp) {
