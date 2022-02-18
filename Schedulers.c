@@ -114,15 +114,6 @@ void crear_proceso(char * str){
 
 	processs->name = malloc(5*sizeof(char));
 
-/*	int i = 0;
-	for (; ptr[i] != '\0'; ++i)
-	{
-		processs->name[i] = ptr[i];
-	//	printf("%s \n", &ptr[i]);
-	} 
-
-
-	processs->name[i] = '\0';*/
 	processs->name = ptr;
 
 	
@@ -167,28 +158,6 @@ void cargar_procesos(){
 		//	printf("%s",&ch);
 			}
 
-
-	
-	uint i=0;
-	/*while ((ch=fgetc(fp)) != EOF){
-		/* code *
-		if(ch == '\n'){
-			*(buffer+1)='\0';
-			printf("%s", buffer);
-		//	printf("%s",&ch);
-		//	crear_proceso(buffer);
-			*buffer = '\0';
-			printf("%s", buffer);
-			i=0;
-			
-		}else{
-			*(buffer+1)=ch;
-		//	printf("%s",&ch);
-			i++;
-		}
-
-
-	}*/
 
 	while (fscanf(fp, "%[^\n] ", buffer) != EOF){
 	//	printf("%s \n", buffer);
@@ -246,6 +215,44 @@ void output(void *vargp) {
 	printf("|-------|-------|-------|-------|-------|-------|-------|-------|-------| \n\n");
 } 
 
+void fila_fsfc(struct list *queue, struct node ** array, int length){
+	for (int i = 0; i < length; ++i)
+	{
+		add_back(queue, *(array + i));
+	}
+}
+
+void fcfs_pepare(struct list *l){
+	int at = 0;
+	struct node * original = &l->head;
+	struct node * n;
+	uint kernel_time = 0;
+
+	int numberProcesses = length(l);
+
+	int dispatched = 0;
+
+	for (int at = 0; dispatched != numberProcesses; ++at)
+	{
+		n = original;
+		while((n = n->next) != NULL){
+			if (n->at == at)
+			{
+				kernel_time = kernel_time + n->bt;
+				n->et = kernel_time;
+				n->wt = kernel_time - n->at - n->bt;
+				n->rt = n->wt;
+				n->tt = n->et - at;
+				++dispatched;
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+}
+
 void FCFS(void *vargp) {
 	/*
 	AT=AT
@@ -256,10 +263,132 @@ void FCFS(void *vargp) {
 	TT = ET-AT = BT+WT
 	*/
 	inicialisar_lista(&cola);
+	//***********************
+	fila_fsfc(&cola, processes, Nprocess);
+	fcfs_pepare(&cola);
+	//***********************
 	printf(" --> FCFS\n");
+	printf("|-------|-------|-------|-------|-------|-------|-------| \n");
+	printf("|PXX\t|AT\t|BT\t|ET\t|WT\t|RT\t|TT\t|\n" );
+	printf("|-------|-------|-------|-------|-------|-------|-------| \n");
+		struct node * n ;
+			for (int i = 0; i < Nprocess; ++i)
+		{
+			n = *(processes + i);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
+				i, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
+			}
+			printf("|-------|-------|-------|-------|-------|-------|-------| \n");
 	
-	output(0);
+
+
 } 
+void insert(struct list * pq, struct node * newnode, struct node * reference){
+	newnode->next = reference;
+	newnode->prev = reference->prev;
+
+	if (reference->prev == NULL)
+	{
+		pq->head.next = newnode;
+	}
+	else
+	{
+		reference->prev->next = newnode;
+	}
+
+	reference->prev = newnode;
+
+}
+void priority_add(struct list *pq, struct node *n){
+	
+	struct node * dog = &pq->head;
+	if (pq->head.next == NULL)
+	{
+		add_back(pq, n);
+	}
+	else
+	{	
+		while((dog = dog->next) != NULL){
+			if (dog->v > n->v)
+			{
+			//	reschedule(pq, n, dog);
+			if (dog)
+				insert(pq, n, dog);
+			else
+				add_back(pq, n);
+				break;
+			}
+			else
+			{
+				if (dog->next == NULL)
+				{
+					add_back(pq, n);
+							
+					break;
+				}
+				else
+				{
+					continue;
+				}
+			}
+		}
+	}	
+}
+
+void ps_schedule(struct list * queue, struct node ** array, int length){
+	char str[5];
+	uint kernel_time = 0;
+	uint executing = 0;
+	uint time_travel = 0;
+	struct node * inExecution;
+	uint estimated_finish_time = 0;
+
+	int dispatched = 0;
+
+	char * str1 = "No process in execution";
+
+
+
+	for (; dispatched != length; ++kernel_time)
+	{
+		//printf("At kernel time: %d\n", kernel_time);
+		for (int i = 0; i < length; ++i)
+		{
+			if ((*(array + i))->at == kernel_time)
+			{
+				
+				priority_add(queue, *(array + i));
+			}
+			else
+			{
+				continue;
+			}
+		}
+		
+
+		if (executing && estimated_finish_time == kernel_time)
+		{
+			executing = 0;
+			dispatched++;
+			inExecution = NULL;
+		}
+
+		if (executing == 0)
+		{
+			if (queue->head.next != NULL)
+			{
+				inExecution = pop(queue);
+				executing = 1;
+				estimated_finish_time = kernel_time + inExecution->bt;
+				
+				inExecution->et = estimated_finish_time;
+				inExecution->wt = estimated_finish_time - inExecution->at - inExecution->bt;
+				inExecution->rt = inExecution->wt;
+				inExecution->tt = inExecution->et - inExecution->at;
+			}
+		}			
+	}	
+}
 
 void PS(void *vargp) {
 	/*
@@ -271,19 +400,31 @@ void PS(void *vargp) {
 			ET= AT+BT
 			WT=0
 		else
-            
-
-
-		
-
-
 	ET= ?
 	WT= ?
 	RT=WT
 	TT = ET-AT = BT+WT
 	*/
+	//output(0);
+	inicialisar_lista(&cola);
+	//***********************
+	fila_fsfc(&cola, processes, Nprocess);
+	fcfs_pepare(&cola);
+	//***********************
 	printf(" --> PS\n");
-	output(0);
+	printf("|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+	printf("|PXX\t|AT\t|BT\t|PR\t|ET\t|WT\t|RT\t|TT\t|\n" );
+	printf("|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+		struct node * n ;
+			for (int i = 0; i < Nprocess; ++i)
+		{
+			n = *(processes + i);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
+				i, n->at, n->bt, n->v, n->et, n->wt, n->rt, n->tt);
+			}
+			printf("|-------|-------|-------|-------|-------|-------|-------|-------| \n");
+
+
 } 
 
 void RR(void *vargp) {
