@@ -269,8 +269,7 @@ void FCFS(void *vargp) {
 			for (int i = 0; i < Nprocess; ++i)
 		{
 			n = *(processes + i);
-			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
-				i, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",i, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
 			}
 			printf("|-------|-------|-------|-------|-------|-------|-------| \n");
 	
@@ -405,8 +404,7 @@ void PS(void *vargp) {
 			for (int i = 0; i < Nprocess; ++i)
 		{
 			n = *(processes + i);
-			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
-				i, n->at, n->bt, n->v, n->et, n->wt, n->rt, n->tt);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",i, n->at, n->bt, n->v, n->et, n->wt, n->rt, n->tt);
 			}
 			printf("|-------|-------|-------|-------|-------|-------|-------|-------| \n");
 
@@ -499,8 +497,7 @@ void RR(void *vargp) {
 			for (int i = 0; i < Nprocess; ++i)
 		{
 			n = *(processes + i);
-			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",
-				i, n->qu, n->qm, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
+			printf("|P%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t|%d\t| \n",i, n->qu, n->qm, n->at, n->bt, n->et, n->wt, n->rt, n->tt);
 			}
 			printf("|-------|-------|-------|-------|-------|-------|-------|-------|-------| \n");
 
